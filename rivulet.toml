@@ -1,0 +1,80 @@
+# Dashboard layout for the Stream Deck Neo. Keys are filled in the order the [[slot]]
+# blocks appear: the first key_layout()[1] entries are row 1, the next ones are row 2.
+#
+# source / total / bar_max name telemetry gauges taken from metrics.Snapshot:
+#   cpu_percent  cpu_temp_c  cpu_ghz  cpu_max_ghz
+#   ram_used_gib  ram_total_gib
+#   gpu_percent  gpu_temp_c  gpu_mem_used_gib  gpu_mem_total_gib  gpu_power_w  gpu_power_limit_w
+#
+# The bar fills value / ceiling, where the ceiling is `total`, else `bar_max`, else 100.
+# warn / critical are percentages of that ceiling (70 = the bar is 70 % full), so they stay
+# correct when the ceiling itself changes — 70 of a 285 W limit is 199.5 W.
+# A slot without warn/critical is drawn in the neutral colour instead of a heat colour.
+
+refresh_seconds = 2.0
+
+[strip]
+format = "{deck}  {time:%H:%M:%S}"
+
+# Row 1: CPU + RAM.
+[[slot]]
+label = "CPU"
+source = "cpu_percent"
+unit = "%"
+warn = 50
+critical = 85
+
+[[slot]]
+label = "CPU TEMP"
+source = "cpu_temp_c"
+unit = "°C"
+warn = 65
+critical = 85
+
+[[slot]]
+label = "CPU CLOCK"
+source = "cpu_ghz"
+unit = "GHz"
+precision = 2
+bar_max = "cpu_max_ghz"
+
+[[slot]]
+label = "RAM"
+source = "ram_used_gib"
+unit = "G"
+precision = 1
+total = "ram_total_gib"
+warn = 70
+critical = 90
+
+# Row 2: GPU + VRAM.
+[[slot]]
+label = "GPU"
+source = "gpu_percent"
+unit = "%"
+warn = 50
+critical = 90
+
+[[slot]]
+label = "GPU TEMP"
+source = "gpu_temp_c"
+unit = "°C"
+warn = 70
+critical = 85
+
+[[slot]]
+label = "GPU POWER"
+source = "gpu_power_w"
+unit = "W"
+total = "gpu_power_limit_w"
+warn = 70
+critical = 90
+
+[[slot]]
+label = "VRAM"
+source = "gpu_mem_used_gib"
+unit = "G"
+precision = 1
+total = "gpu_mem_total_gib"
+warn = 70
+critical = 90

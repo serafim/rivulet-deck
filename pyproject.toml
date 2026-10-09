@@ -1,0 +1,27 @@
+[project]
+name = "rivulet-deck"
+version = "0.1.0"
+description = "Live CPU/GPU system dashboard rendered on an Elgato Stream Deck Neo"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "pillow>=12.3.0",
+    "streamdeck>=0.10.0",
+]
+
+[project.scripts]
+rivulet-deck = "rivulet_deck:main"
+
+[build-system]
+requires = ["uv_build>=0.12.20,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+]
+
+[tool.ruff]
+# Ruff runs with its default rule set; .qwen/ holds scratch scripts, not project code.
+extend-exclude = [".qwen"]
