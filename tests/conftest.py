@@ -6,6 +6,7 @@ import pytest
 from StreamDeck.DeviceManager import DeviceManager
 
 from rivulet_deck import config, metrics
+from rivulet_deck.trend import Trends
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 CONFIG_PATH = REPO_ROOT / "rivulet.toml"
@@ -82,11 +83,30 @@ def make_slot():
 @pytest.fixture
 def make_config():
     def build(*slots: config.Slot, **overrides) -> config.Config:
-        fields = {"refresh_seconds": 1.0, "strip_format": "{deck} {time}", "slots": slots}
+        fields = {
+            "refresh_seconds": 1.0,
+            "strip_format": "{deck} {time}",
+            "trend_samples": 30,
+            "slots": slots,
+        }
         fields.update(overrides)
         return config.Config(**fields)
 
     return build
+
+
+@pytest.fixture
+def make_trends():
+    def build(samples: int = 30) -> Trends:
+        return Trends(samples)
+
+    return build
+
+
+@pytest.fixture
+def trends(make_trends) -> Trends:
+    """Fresh trend history, as main() would build it from the config."""
+    return make_trends()
 
 
 @pytest.fixture

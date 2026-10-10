@@ -5,8 +5,10 @@ import tomllib
 from dataclasses import dataclass
 
 DEFAULT_PATH = pathlib.Path("rivulet.toml")
+DEFAULT_REFRESH_SECONDS = 2.0
+DEFAULT_TREND_SAMPLES = 30
 
-# Snapshot attributes a slot may read; also valid as a bar ceiling.
+# Snapshot attributes a slot may read; also valid as a value ceiling.
 GAUGES = (
     "cpu_percent",
     "cpu_temp_c",
@@ -43,6 +45,7 @@ class Slot:
 class Config:
     refresh_seconds: float
     strip_format: str
+    trend_samples: int
     slots: tuple[Slot, ...]
 
 
@@ -60,9 +63,14 @@ def load(path: pathlib.Path = DEFAULT_PATH) -> Config:
     if not slots:
         raise ConfigError(f"{path}: expected at least one [[slot]] block")
 
+    trend_samples = int(table.get("trend_samples", DEFAULT_TREND_SAMPLES))
+    if trend_samples < 2:
+        raise ConfigError(f"{path}: trend_samples must be at least 2")
+
     return Config(
-        refresh_seconds=float(table.get("refresh_seconds", 2.0)),
+        refresh_seconds=float(table.get("refresh_seconds", DEFAULT_REFRESH_SECONDS)),
         strip_format=table.get("strip", {}).get("format", "{deck}  {time:%H:%M:%S}"),
+        trend_samples=trend_samples,
         slots=slots,
     )
 

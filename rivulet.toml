@@ -6,12 +6,17 @@
 #   ram_used_gib  ram_total_gib
 #   gpu_percent  gpu_temp_c  gpu_mem_used_gib  gpu_mem_total_gib  gpu_power_w  gpu_power_limit_w
 #
-# The bar fills value / ceiling, where the ceiling is `total`, else `bar_max`, else 100.
-# warn / critical are percentages of that ceiling (70 = the bar is 70 % full), so they stay
+# The trend graph under each value plots the last `trend_samples` readings of value / ceiling,
+# stretched to its own min..max so the shape stays readable. The ceiling is `total`, else
+# `bar_max`, else 100.
+# warn / critical are percentages of that ceiling (70 = 70 % of the ceiling), so they stay
 # correct when the ceiling itself changes — 70 of a 285 W limit is 199.5 W.
 # A slot without warn/critical is drawn in the neutral colour instead of a heat colour.
 
 refresh_seconds = 2.0
+
+# Readings kept per key for its trend graph: 30 x 2 s is a minute of history.
+trend_samples = 30
 
 [strip]
 format = "{deck}  {time:%H:%M:%S}"

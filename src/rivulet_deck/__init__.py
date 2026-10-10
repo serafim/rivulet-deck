@@ -14,6 +14,7 @@ from StreamDeck.ImageHelpers.PILHelper import (
 
 from . import config, metrics
 from .render import render_key, render_metric, render_screen
+from .trend import Trends
 
 _OK = "#9ad36f"
 _WARN = "#f7d154"
@@ -83,7 +84,9 @@ def _tile(snapshot: metrics.Snapshot, slot: config.Slot) -> Tile:
     )
 
 
-def paint(deck: StreamDeck, snapshot: metrics.Snapshot, dashboard: config.Config) -> None:
+def paint(
+    deck: StreamDeck, snapshot: metrics.Snapshot, dashboard: config.Config, trends: Trends
+) -> None:
     slots = tiles(snapshot, dashboard)
 
     if deck.screen_image_format()["size"][0]:
@@ -94,7 +97,8 @@ def paint(deck: StreamDeck, snapshot: metrics.Snapshot, dashboard: config.Config
         deck.set_screen_image(to_native_screen_format(deck, strip))
 
     for key, tile in enumerate(slots[: deck.key_count()]):
-        image = render_metric(deck, tile.label, tile.value, tile.unit, tile.color, tile.fraction)
+        samples = trends.record(key, tile.fraction)
+        image = render_metric(deck, tile.label, tile.value, tile.unit, tile.color, samples)
         deck.set_key_image(key, to_native_key_format(deck, image))
 
     for key in range(len(slots), deck.key_count()):
@@ -148,6 +152,7 @@ def main() -> None:
 
     deck = decks[0]
     usage = metrics.CpuUsage(interval=min(1.0, dashboard.refresh_seconds))
+    trends = Trends(dashboard.trend_samples)
 
     # The context manager only takes the deck's update lock; the transport
     # handshake is open()/close(), which must wrap every image write.
@@ -157,13 +162,13 @@ def main() -> None:
         with deck:
             print(
                 f"{deck.deck_type()} [{deck.id()}]: {deck.key_count()} keys, "
-                f"{len(dashboard.slots)} slots, refresh {dashboard.refresh_seconds:.0f}s. "
-                "Ctrl+C or SIGTERM to clear."
+                f"{len(dashboard.slots)} slots, refresh {dashboard.refresh_seconds:.0f}s, "
+                f"trend {dashboard.trend_samples} readings. Ctrl+C or SIGTERM to clear."
             )
             try:
                 while deck.connected():
                     snapshot = metrics.collect(usage)
-                    paint(deck, snapshot, dashboard)
+                    paint(deck, snapshot, dashboard, trends)
                     print(_line(snapshot, dashboard))
                     time.sleep(dashboard.refresh_seconds)
             except (KeyboardInterrupt, _Shutdown):

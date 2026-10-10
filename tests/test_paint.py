@@ -24,41 +24,76 @@ def blank_key(neo):
     return to_native_key_format(neo, render.render_key(neo, ""))
 
 
-def test_paint_writes_one_image_per_key_and_one_strip(neo, written, snapshot, dashboard):
+def test_paint_writes_one_image_per_key_and_one_strip(neo, written, snapshot, dashboard, trends):
     keys, screens = written
-    rivulet_deck.paint(neo, snapshot, dashboard)
+    rivulet_deck.paint(neo, snapshot, dashboard, trends)
 
     assert sorted(keys) == list(range(neo.key_count()))
     assert all(isinstance(image, bytes) and image for image in keys.values())
     assert len(screens) == 1 and isinstance(screens[0], bytes)
 
 
-def test_keys_without_a_slot_are_blanked(neo, written, blank_key, make_config, make_slot, snapshot):
+def test_keys_without_a_slot_are_blanked(
+    neo, written, blank_key, make_config, make_slot, snapshot, trends
+):
     keys, _ = written
-    rivulet_deck.paint(neo, snapshot, make_config(*(make_slot() for _ in range(3))))
+    rivulet_deck.paint(neo, snapshot, make_config(*(make_slot() for _ in range(3))), trends)
 
     assert sorted(keys) == list(range(neo.key_count()))
     assert [keys[key] for key in range(3, neo.key_count())] == [blank_key] * (neo.key_count() - 3)
     assert keys[0] != blank_key
 
 
-def test_slots_beyond_the_key_count_are_ignored(neo, written, make_config, make_slot, snapshot):
+def test_slots_beyond_the_key_count_are_ignored(
+    neo, written, make_config, make_slot, snapshot, trends
+):
     keys, _ = written
-    rivulet_deck.paint(neo, snapshot, make_config(*(make_slot() for _ in range(neo.key_count() + 2))))
+    rivulet_deck.paint(
+        neo, snapshot, make_config(*(make_slot() for _ in range(neo.key_count() + 2))), trends
+    )
 
     assert sorted(keys) == list(range(neo.key_count()))
 
 
-def test_the_threshold_colour_reaches_the_artwork(neo, written, make_snapshot, dashboard):
+def test_the_threshold_colour_reaches_the_artwork(
+    neo, written, make_snapshot, dashboard, make_trends
+):
     keys, _ = written
-    rivulet_deck.paint(neo, make_snapshot(cpu_percent=10.0), dashboard)
+    rivulet_deck.paint(neo, make_snapshot(cpu_percent=10.0), dashboard, make_trends())
     calm = keys[0]
-    rivulet_deck.paint(neo, make_snapshot(cpu_percent=95.0), dashboard)
+    # A fresh history each time, so the only thing that can change the artwork is the colour.
+    rivulet_deck.paint(neo, make_snapshot(cpu_percent=95.0), dashboard, make_trends())
 
     assert keys[0] != calm
 
 
-def test_the_strip_shows_the_deck_type_and_a_clock(neo, written, dashboard, snapshot, monkeypatch):
+def test_the_graph_accumulates_across_frames(neo, written, snapshot, dashboard, trends):
+    keys, _ = written
+    rivulet_deck.paint(neo, snapshot, dashboard, trends)
+    first = keys[0]
+    rivulet_deck.paint(neo, snapshot, dashboard, trends)
+
+    # Same telemetry, so the only difference is the second reading joining the window.
+    assert keys[0] != first
+
+
+def test_a_slot_without_telemetry_keeps_an_empty_graph(
+    neo, written, make_snapshot, dashboard, trends
+):
+    keys, _ = written
+    for _ in range(3):
+        rivulet_deck.paint(neo, make_snapshot(cpu_percent=None), dashboard, trends)
+
+    # A dropped reading clears the window rather than leaving a stale trend lit on the key.
+    expected = to_native_key_format(
+        neo, render.render_metric(neo, "CPU", "n/a", "%", rivulet_deck._MISSING)
+    )
+    assert keys[0] == expected
+
+
+def test_the_strip_shows_the_deck_type_and_a_clock(
+    neo, written, dashboard, snapshot, trends, monkeypatch
+):
     seen: list[str] = []
     draw_strip = render.render_screen
 
@@ -67,7 +102,7 @@ def test_the_strip_shows_the_deck_type_and_a_clock(neo, written, dashboard, snap
         return draw_strip(deck, text, **kwargs)
 
     monkeypatch.setattr(rivulet_deck, "render_screen", recording)
-    rivulet_deck.paint(neo, snapshot, dashboard)
+    rivulet_deck.paint(neo, snapshot, dashboard, trends)
 
     assert len(seen) == 1
     assert neo.deck_type() in seen[0]

@@ -28,9 +28,10 @@ def test_shipped_layout_fills_every_neo_key(dashboard, neo):
     assert len(dashboard.slots) == neo.key_count()
 
 
-def test_shipped_refresh_and_strip(dashboard):
+def test_shipped_refresh_strip_and_trend(dashboard):
     assert dashboard.refresh_seconds == 2.0
     assert dashboard.strip_format == "{deck}  {time:%H:%M:%S}"
+    assert dashboard.trend_samples == 30
 
 
 def test_defaults_when_optional_keys_are_omitted(write_config):
@@ -38,6 +39,7 @@ def test_defaults_when_optional_keys_are_omitted(write_config):
 
     assert loaded.refresh_seconds == 2.0
     assert loaded.strip_format == "{deck}  {time:%H:%M:%S}"
+    assert loaded.trend_samples == 30
     assert loaded.slots == (
         config.Slot(
             label="slot 0",
@@ -61,6 +63,12 @@ def test_every_gauge_name_is_usable_as_source_and_ceiling(write_config, gauge):
     assert loaded.slots[0].total == gauge
 
 
+def test_the_trend_window_length_comes_from_the_file(write_config):
+    loaded = config.load(write_config('trend_samples = 5\n[[slot]]\nsource = "cpu_percent"\n'))
+
+    assert loaded.trend_samples == 5
+
+
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
@@ -70,6 +78,10 @@ def test_every_gauge_name_is_usable_as_source_and_ceiling(write_config, gauge):
         ('[[slot]]\nsource = "cpu_percent"\nwarn = 40\n', "warn and critical"),
         ('[[slot]]\nsource = "cpu_percent"\ncritical = 90\n', "warn and critical"),
         ("refresh_seconds = 1.0\n", "at least one [[slot]]"),
+        (
+            'trend_samples = 1\n[[slot]]\nsource = "cpu_percent"\n',
+            "trend_samples must be at least 2",
+        ),
         ("[[slot\nsource = 1\n", "not valid TOML"),
     ],
 )
