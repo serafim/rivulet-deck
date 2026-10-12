@@ -41,6 +41,7 @@ class Snapshot:
     gpu_mem_total_gib: float | None
     gpu_power_w: float | None
     gpu_power_limit_w: float | None
+    uptime_seconds: float | None
 
     @property
     def ram_percent(self) -> float:
@@ -187,6 +188,14 @@ def nvidia_stats() -> GpuStats | None:
     )
 
 
+def uptime_seconds() -> float | None:
+    """Seconds since boot: the first field of /proc/uptime."""
+    try:
+        return float(pathlib.Path("/proc/uptime").read_text().split()[0])
+    except (OSError, ValueError, IndexError):
+        return None
+
+
 def collect(usage: CpuUsage) -> Snapshot:
     gpu = nvidia_stats()
     ram_used, ram_total = memory_gib()
@@ -204,4 +213,5 @@ def collect(usage: CpuUsage) -> Snapshot:
         gpu_mem_total_gib=None if gpu is None else gpu.mem_total_gib,
         gpu_power_w=None if gpu is None else gpu.power_w,
         gpu_power_limit_w=None if gpu is None else gpu.power_limit_w,
+        uptime_seconds=uptime_seconds(),
     )

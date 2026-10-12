@@ -18,8 +18,12 @@ refresh_seconds = 2.0
 # Readings kept per key for its trend graph: 30 x 2 s is a minute of history.
 trend_samples = 30
 
+# [strip] format is a str.format template for the 248x58 strip. Available variables:
+#   {uptime} system uptime as days:hours:minutes:seconds (days as-is, the rest zero-padded)
+#   {time}   a datetime, so strftime specs work: {time:%H:%M:%S}
+#   {deck}   the deck type, e.g. "Stream Deck Neo"
 [strip]
-format = "{deck}  {time:%H:%M:%S}"
+format = "{uptime}  {time:%H:%M:%S}"
 
 # Row 1: CPU + RAM.
 [[slot]]

@@ -190,6 +190,20 @@ def test_nvidia_stats_is_none_when_the_tool_is_missing_or_hangs(fake_nvidia, err
     assert metrics.nvidia_stats() is None
 
 
+def test_uptime_is_the_first_field_of_proc_uptime(fake_files):
+    fake_files({"/proc/uptime": "33568.03 753211.80\n"})
+    assert metrics.uptime_seconds() == pytest.approx(33568.03)
+
+
+@pytest.mark.parametrize(
+    "contents", [None, "", "not a number\n", "\n"], ids=["absent", "empty", "garbage", "blank"]
+)
+def test_uptime_is_none_when_proc_uptime_cannot_be_parsed(fake_files, contents):
+    files = {} if contents is None else {"/proc/uptime": contents}
+    fake_files(files)
+    assert metrics.uptime_seconds() is None
+
+
 def test_collect_maps_a_missing_gpu_into_empty_snapshot_fields(
     fake_nvidia, fake_files, hwmon_tree, monkeypatch
 ):
@@ -199,6 +213,7 @@ def test_collect_maps_a_missing_gpu_into_empty_snapshot_fields(
             "/proc/stat": "cpu  1 2 3 4 5\n",
             "/proc/cpuinfo": "cpu MHz : 1000.000\n",
             "/proc/meminfo": "MemTotal: 1048576 kB\nMemAvailable: 524288 kB\n",
+            "/proc/uptime": "33568.03 753211.80\n",
         }
     )
     monkeypatch.setattr(metrics.time, "sleep", lambda *_: None)
@@ -210,3 +225,4 @@ def test_collect_maps_a_missing_gpu_into_empty_snapshot_fields(
     assert (snapshot.ram_used_gib, snapshot.ram_total_gib) == (0.5, 1.0)
     assert snapshot.cpu_ghz == pytest.approx(1.0)
     assert snapshot.cpu_temp_c is None
+    assert snapshot.uptime_seconds == pytest.approx(33568.03)

@@ -24,6 +24,14 @@ ceiling, so a value that only drifted between 45 % and 55 % is as readable as on
 0 % to 100 %; the colour still follows the slot's thresholds, and the newest reading is always on
 the right edge.
 
+## What the strip shows
+
+The 248×58 strip carries the **system uptime** as `days:hours:minutes:seconds` — days as they
+come, hours, minutes and seconds zero-padded — followed by the local clock, e.g.
+`14:06:56:07  20:31:44`. Both come from the same `[strip] format` template as before; `{uptime}`
+is a new variable next to `{time}` and `{deck}`, so the deck name can still be put back with a
+one-line config change.
+
 ## Running it
 
 ```bash
@@ -40,7 +48,7 @@ is closed before the process exits, so an interrupted run never leaves the last 
 ## Tests and lint
 
 ```bash
-uv run pytest           # 96 tests, headless: they touch neither the deck nor real telemetry
+uv run pytest           # 110 tests, headless: they touch neither the deck nor real telemetry
 uv run ruff check .     # ruff, running on its own default rules
 ```
 

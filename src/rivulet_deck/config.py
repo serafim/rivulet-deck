@@ -69,7 +69,7 @@ def load(path: pathlib.Path = DEFAULT_PATH) -> Config:
 
     return Config(
         refresh_seconds=float(table.get("refresh_seconds", DEFAULT_REFRESH_SECONDS)),
-        strip_format=table.get("strip", {}).get("format", "{deck}  {time:%H:%M:%S}"),
+        strip_format=table.get("strip", {}).get("format", "{uptime}  {time:%H:%M:%S}"),
         trend_samples=trend_samples,
         slots=slots,
     )

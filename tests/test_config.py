@@ -30,7 +30,7 @@ def test_shipped_layout_fills_every_neo_key(dashboard, neo):
 
 def test_shipped_refresh_strip_and_trend(dashboard):
     assert dashboard.refresh_seconds == 2.0
-    assert dashboard.strip_format == "{deck}  {time:%H:%M:%S}"
+    assert dashboard.strip_format == "{uptime}  {time:%H:%M:%S}"
     assert dashboard.trend_samples == 30
 
 
@@ -38,7 +38,7 @@ def test_defaults_when_optional_keys_are_omitted(write_config):
     loaded = config.load(write_config('[[slot]]\nsource = "cpu_percent"\n'))
 
     assert loaded.refresh_seconds == 2.0
-    assert loaded.strip_format == "{deck}  {time:%H:%M:%S}"
+    assert loaded.strip_format == "{uptime}  {time:%H:%M:%S}"
     assert loaded.trend_samples == 30
     assert loaded.slots == (
         config.Slot(

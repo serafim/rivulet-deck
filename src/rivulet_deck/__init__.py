@@ -84,6 +84,16 @@ def _tile(snapshot: metrics.Snapshot, slot: config.Slot) -> Tile:
     )
 
 
+def _format_uptime(seconds: float | None) -> str:
+    """Days:hours:minutes:seconds — days as they come, the rest zero-padded to two digits."""
+    if seconds is None:
+        return "n/a"
+    days, remainder = divmod(int(seconds), 86_400)
+    hours, remainder = divmod(remainder, 3_600)
+    minutes, secs = divmod(remainder, 60)
+    return f"{days}:{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
 def paint(
     deck: StreamDeck, snapshot: metrics.Snapshot, dashboard: config.Config, trends: Trends
 ) -> None:
@@ -92,7 +102,12 @@ def paint(
     if deck.screen_image_format()["size"][0]:
         clock = datetime.now(UTC).astimezone()
         strip = render_screen(
-            deck, dashboard.strip_format.format(deck=deck.deck_type(), time=clock)
+            deck,
+            dashboard.strip_format.format(
+                deck=deck.deck_type(),
+                time=clock,
+                uptime=_format_uptime(snapshot.uptime_seconds),
+            ),
         )
         deck.set_screen_image(to_native_screen_format(deck, strip))
 

@@ -91,7 +91,24 @@ def test_a_slot_without_telemetry_keeps_an_empty_graph(
     assert keys[0] == expected
 
 
-def test_the_strip_shows_the_deck_type_and_a_clock(
+@pytest.mark.parametrize(
+    ("seconds", "expected"),
+    [
+        (None, "n/a"),
+        (0.0, "0:00:00:00"),
+        (59.9, "0:00:00:59"),
+        (3600.0, "0:01:00:00"),
+        (86_399.0, "0:23:59:59"),
+        (86_400.0, "1:00:00:00"),
+        (1_234_567.89, "14:06:56:07"),
+        (950_400.0, "11:00:00:00"),
+    ],
+)
+def test_uptime_is_days_hours_minutes_seconds_with_zero_padded_tail(seconds, expected):
+    assert rivulet_deck._format_uptime(seconds) == expected
+
+
+def test_the_strip_shows_the_uptime_and_a_clock(
     neo, written, dashboard, snapshot, trends, monkeypatch
 ):
     seen: list[str] = []
@@ -105,8 +122,25 @@ def test_the_strip_shows_the_deck_type_and_a_clock(
     rivulet_deck.paint(neo, snapshot, dashboard, trends)
 
     assert len(seen) == 1
-    assert neo.deck_type() in seen[0]
-    assert re.search(r"\d{2}:\d{2}:\d{2}", seen[0])
+    assert "14:06:56:07" in seen[0]
+    assert re.search(r"\d{2}:\d{2}:\d{2}$", seen[0])
+
+
+def test_the_strip_template_still_offers_the_deck_type(
+    neo, written, make_config, make_slot, snapshot, trends, monkeypatch
+):
+    seen: list[str] = []
+    draw_strip = render.render_screen
+
+    def recording(deck, text, **kwargs):
+        seen.append(text)
+        return draw_strip(deck, text, **kwargs)
+
+    monkeypatch.setattr(rivulet_deck, "render_screen", recording)
+    layout = make_config(make_slot(), strip_format="{deck} {uptime} {time:%H:%M:%S}")
+    rivulet_deck.paint(neo, snapshot, layout, trends)
+
+    assert re.fullmatch(r"Stream Deck Neo 14:06:56:07 \d{2}:\d{2}:\d{2}", seen[0])
 
 
 def test_clear_blanks_every_key_and_leaves_the_strip_alone(neo, written, blank_key):

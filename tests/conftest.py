@@ -26,6 +26,7 @@ _SNAPSHOT_DEFAULTS = {
     "gpu_mem_total_gib": 8.0,
     "gpu_power_w": 100.0,
     "gpu_power_limit_w": 285.0,
+    "uptime_seconds": 1_234_567.89,
 }
 
 
